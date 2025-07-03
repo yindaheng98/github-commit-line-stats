@@ -2,13 +2,15 @@ import pathlib
 import json
 from collections import defaultdict
 from github import Github  # pip install PyGitHub
+from github.GithubObject import NotSet
 import requests
 import os
 import sys
 
 GH_TOKEN = sys.argv[1]
 gh = Github(GH_TOKEN)
-user = gh.get_user("yindaheng98")
+USER = sys.argv[2] if len(sys.argv) > 2 else NotSet
+user = gh.get_user(USER)
 
 totals = defaultdict(int)
 
