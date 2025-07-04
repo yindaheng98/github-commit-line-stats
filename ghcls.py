@@ -2,11 +2,13 @@ import pathlib
 import json
 from collections import defaultdict
 from typing import Dict
-from github import Github, Commit  # pip install PyGitHub
+from github import Github  # pip install PyGitHub
+from github.Commit import Commit
 from github.GithubObject import NotSet
 import requests
 import os
 import sys
+import dbm.sqlite3 as dbm
 
 GH_TOKEN = sys.argv[1]
 gh = Github(GH_TOKEN)
@@ -16,7 +18,17 @@ user = gh.get_user(USER)
 totals = defaultdict(int)
 
 
-def get_additions_in_commit(commit: Commit) -> Dict[str, int]:
+def get_additions_in_commit(commit: Commit, cache: str = "commitcache") -> Dict[str, int]:
+    with dbm.open(cache, 'c') as db:
+        if commit.sha in db:
+            return json.loads(db[commit.sha])
+        else:
+            additions = get_additions_in_commit_from_request(commit)
+            db[commit.sha] = json.dumps(additions)
+            return additions
+
+
+def get_additions_in_commit_from_request(commit: Commit) -> Dict[str, int]:
     totals = defaultdict(int)
     if len(commit.parents) <= 0:
         return totals  # Skip if there are no parents (first commit)
