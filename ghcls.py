@@ -77,11 +77,14 @@ def get_patch_of_commit_from_request(commit: Commit, repo: Repository, gh_token:
 
 
 if __name__ == "__main__":
-    import sys
+    import argparse
     logging.basicConfig(level=logging.INFO)
-    GH_TOKEN = sys.argv[1]
-    gh = Github(GH_TOKEN)
-    USER = sys.argv[2] if len(sys.argv) > 2 else NotSet
-    user = gh.get_user(USER)
-    totals = get_additions_of_user(user, GH_TOKEN, "commitcache")
+    parser = argparse.ArgumentParser(description="GitHub Commit Line Stats")
+    parser.add_argument("-t", "--token", type=str, required=True, help="GitHub Personal Access Token")
+    parser.add_argument("-u", "--user", type=str, default=None, help="GitHub Username (Optional)")
+    parser.add_argument("-c", "--cache", type=str, default="commitcache", help="Cache directory for commits")
+    args = parser.parse_args()
+    gh = Github(args.token)
+    user = gh.get_user(args.user or NotSet)
+    totals = get_additions_of_user(user, args.token, args.cache)
     pathlib.Path("ghcls.json").write_text(json.dumps(totals, indent=2))
