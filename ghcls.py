@@ -15,7 +15,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_additions_of_user(user: NamedUser | AuthenticatedUser, gh_token: str, cache: str = "commitcache") -> Dict[str, int]:
+def main(token: str, user: str = None, cache: str = "commitcache", output: str = "ghcls.json"):
+    gh = Github(token)
+    user = gh.get_user(user or NotSet)
+    totals = get_additions_of_user(user, token, cache)
+    pathlib.Path(output).write_text(json.dumps(totals, indent=2))
+
+
+def get_additions_of_user(user: NamedUser | AuthenticatedUser, gh_token: str, cache) -> Dict[str, int]:
     cache = pathlib.Path(cache)
     usercache = cache / user.login
     os.makedirs(usercache, exist_ok=True)  # Ensure user cache directory exists
@@ -83,8 +90,6 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--token", type=str, required=True, help="GitHub Personal Access Token")
     parser.add_argument("-u", "--user", type=str, default=None, help="GitHub Username (Optional)")
     parser.add_argument("-c", "--cache", type=str, default="commitcache", help="Cache directory for commits")
+    parser.add_argument("-o", "--output", type=str, default="ghcls.json", help="Output file for commit stats")
     args = parser.parse_args()
-    gh = Github(args.token)
-    user = gh.get_user(args.user or NotSet)
-    totals = get_additions_of_user(user, args.token, args.cache)
-    pathlib.Path("ghcls.json").write_text(json.dumps(totals, indent=2))
+    main(args.token, args.user, args.cache, args.output)
