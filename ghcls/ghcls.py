@@ -2,24 +2,15 @@ import pathlib
 import json
 from collections import defaultdict
 from typing import Dict
-from github import Github  # pip install PyGitHub
 from github.NamedUser import NamedUser
 from github.AuthenticatedUser import AuthenticatedUser
 from github.Repository import Repository
 from github.Commit import Commit
-from github.GithubObject import NotSet
 import requests
 import os
 import dbm.sqlite3 as dbm
 import logging
 logger = logging.getLogger(__name__)
-
-
-def main(token: str, user: str = None, cache: str = "commitcache", output: str = "ghcls.json"):
-    gh = Github(token)
-    user = gh.get_user(user or NotSet)
-    totals = get_additions_of_user(user, token, cache)
-    pathlib.Path(output).write_text(json.dumps(totals, indent=2))
 
 
 def get_additions_of_user(user: NamedUser | AuthenticatedUser, gh_token: str, cache) -> Dict[str, int]:
@@ -81,15 +72,3 @@ def get_patch_of_commit_from_request(commit: Commit, repo: Repository, gh_token:
     logger.info(f"Requesting {commit.sha} at {commit.commit.author.date} in {repo.name}")
     patch = requests.get(url, headers={"Authorization": f"token {gh_token}"}).json()
     return patch
-
-
-if __name__ == "__main__":
-    import argparse
-    logging.basicConfig(level=logging.INFO)
-    parser = argparse.ArgumentParser(description="GitHub Commit Line Stats")
-    parser.add_argument("-t", "--token", type=str, required=True, help="GitHub Personal Access Token")
-    parser.add_argument("-u", "--user", type=str, default=None, help="GitHub Username (Optional)")
-    parser.add_argument("-c", "--cache", type=str, default="commitcache", help="Cache directory for commits")
-    parser.add_argument("-o", "--output", type=str, default="ghcls.json", help="Output file for commit stats")
-    args = parser.parse_args()
-    main(args.token, args.user, args.cache, args.output)
