@@ -6,7 +6,6 @@ from github import Github  # pip install PyGitHub
 from github.NamedUser import NamedUser
 from github.AuthenticatedUser import AuthenticatedUser
 from github.Repository import Repository
-from github.Branch import Branch
 from github.Commit import Commit
 from github.GithubObject import NotSet
 import requests
@@ -17,14 +16,16 @@ logger = logging.getLogger(__name__)
 
 
 def get_additions_of_user(user: NamedUser | AuthenticatedUser, gh_token: str, cache: str = "commitcache") -> Dict[str, int]:
+    usercache = os.path.join(cache, user.login)
+    os.makedirs(usercache, exist_ok=True)  # Ensure user cache directory exists
     totals = defaultdict(int)
     for repo in user.get_repos(type="public"):
-        for lang, addition in get_additions_in_repo(repo, user, gh_token, cache).items():
+        for lang, addition in get_additions_in_repo(repo, user, gh_token, os.path.join(usercache, repo.name)).items():
             totals[lang] += addition
     return totals
 
 
-def get_additions_in_repo(repo: Repository, user: NamedUser | AuthenticatedUser, gh_token: str, cache: str = "commitcache"):
+def get_additions_in_repo(repo: Repository, user: NamedUser | AuthenticatedUser, gh_token: str, cache: str):
     totals = defaultdict(int)
     commit_set = set()
     for branch in repo.get_branches():
@@ -37,7 +38,7 @@ def get_additions_in_repo(repo: Repository, user: NamedUser | AuthenticatedUser,
     return totals
 
 
-def get_additions_in_commit(commit: Commit, repo: Repository, gh_token: str, cache: str = "commitcache") -> Dict[str, int]:
+def get_additions_in_commit(commit: Commit, repo: Repository, gh_token: str, cache: str) -> Dict[str, int]:
     totals = defaultdict(int)
     if len(commit.parents) <= 0:
         return totals  # Skip if there are no parents (first commit)
@@ -52,7 +53,7 @@ def get_additions_in_commit(commit: Commit, repo: Repository, gh_token: str, cac
     return totals
 
 
-def get_patch_of_commit(commit: Commit, repo: Repository, gh_token: str, cache: str = "commitcache") -> Dict:
+def get_patch_of_commit(commit: Commit, repo: Repository, gh_token: str, cache: str) -> Dict:
     cache_key = f"{repo.full_name}-{commit.sha}"
     with dbm.open(cache, 'c') as db:
         if cache_key in db:
