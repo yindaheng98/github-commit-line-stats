@@ -50,6 +50,7 @@ def get_additions_in_commit(commit: Commit, repo: Repository, gh_token: str, cac
             lang = os.path.basename(splitted[0])
         else:
             lang = splitted[1]  # Get file extension
+        lang = lang.lower()  # Normalize to lowercase
         totals[lang] += file["additions"]
     return totals
 
