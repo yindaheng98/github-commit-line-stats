@@ -38,33 +38,38 @@ def get_additions_in_repo(repo: Repository, user: NamedUser | AuthenticatedUser,
 
 
 def get_additions_in_commit(commit: Commit, repo: Repository, gh_token: str, cache: str = "commitcache") -> Dict[str, int]:
+    totals = defaultdict(int)
+    if len(commit.parents) <= 0:
+        return totals  # Skip if there are no parents (first commit)
+    patch = get_patch_of_commit(commit, repo, gh_token, cache)
+    for file in patch.get("files", []):
+        splitted = os.path.splitext(file["filename"])
+        if not splitted[1]:
+            lang = os.path.basename(splitted[0])
+        else:
+            lang = splitted[1]  # Get file extension
+        totals[lang] += file["additions"]
+    return totals
+
+
+def get_patch_of_commit(commit: Commit, repo: Repository, gh_token: str, cache: str = "commitcache") -> Dict:
     cache_key = f"{repo.full_name}-{commit.sha}"
     with dbm.open(cache, 'c') as db:
         if cache_key in db:
             logger.info(f"Use cached {commit.sha} at {commit.commit.author.date} in {repo.name}")
             return json.loads(db[cache_key])
         else:
-            additions = get_additions_in_commit_from_request(commit, repo, gh_token)
-            db[cache_key] = json.dumps(additions)
-            return additions
+            patch = get_patch_of_commit_from_request(commit, repo, gh_token)
+            db[cache_key] = json.dumps(patch)
+            return patch
 
 
-def get_additions_in_commit_from_request(commit: Commit, repo: Repository, gh_token: str) -> Dict[str, int]:
-    totals = defaultdict(int)
-    if len(commit.parents) <= 0:
-        return totals  # Skip if there are no parents (first commit)
+def get_patch_of_commit_from_request(commit: Commit, repo: Repository, gh_token: str) -> Dict:
     parent = commit.parents[0].sha
     url = f"https://api.github.com/repos/{repo.full_name}/compare/{parent}...{commit.sha}"
     logger.info(f"Requesting {commit.sha} at {commit.commit.author.date} in {repo.name}")
     patch = requests.get(url, headers={"Authorization": f"token {gh_token}"}).json()
-    for file in patch.get("files", []):
-        splitted = os.path.splitext(file["filename"])
-        if not splitted[1]:
-            lang = splitted[0]
-        else:
-            lang = splitted[1]  # Get file extension
-        totals[lang] += file["additions"]
-    return totals
+    return patch
 
 
 if __name__ == "__main__":
