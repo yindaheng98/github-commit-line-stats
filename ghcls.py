@@ -16,11 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 def get_additions_of_user(user: NamedUser | AuthenticatedUser, gh_token: str, cache: str = "commitcache") -> Dict[str, int]:
-    usercache = os.path.join(cache, user.login)
+    cache = pathlib.Path(cache)
+    usercache = cache / user.login
     os.makedirs(usercache, exist_ok=True)  # Ensure user cache directory exists
     totals = defaultdict(int)
     for repo in user.get_repos(type="public"):
-        for lang, addition in get_additions_in_repo(repo, user, gh_token, os.path.join(usercache, repo.name)).items():
+        repocache = usercache / repo.full_name
+        os.makedirs(repocache.parent, exist_ok=True)
+        for lang, addition in get_additions_in_repo(repo, user, gh_token, repocache).items():
             totals[lang] += addition
     return totals
 
