@@ -45,6 +45,8 @@ def get_additions_in_commit(commit: Commit, repo: Repository, gh_token: str, cac
         return totals  # Skip if there are no parents (first commit)
     patch = get_patch_of_commit(commit, repo, gh_token, cache)
     for file in patch.get("files", []):
+        if file["additions"] <= 0:
+            continue  # Skip files with no additions
         splitted = os.path.splitext(file["filename"])
         if not splitted[1]:
             lang = os.path.basename(splitted[0])
