@@ -1,6 +1,6 @@
 # GitHub Commit Line Stats
 
-Count how many lines of code you commit in your repo! (Count by file extension)
+Count how many lines of code you commit on GitHub! (Count by file extension)
 
 ```sh
 python -m ghcls --token <YOUR GITHUB TOKEN>
