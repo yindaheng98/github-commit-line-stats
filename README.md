@@ -20,3 +20,12 @@ options:
   -o, --output OUTPUT  Output file for commit stats
 
 ```
+
+```python
+from ghcls import get_additions_of_user, get_language_by_filename
+gh = Github(your_gh_token)
+user = gh.get_user(your_username)
+totals = get_additions_of_user(user, token, cache, get_language_by_filename)
+# You can customize your language detector by changing get_language_by_filename
+pathlib.Path(output).write_text(json.dumps(totals, indent=2))
+```

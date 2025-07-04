@@ -2,13 +2,13 @@ import pathlib
 import json
 from github import Github  # pip install PyGitHub
 from github.GithubObject import NotSet
-from .ghcls import get_additions_of_user
+from .ghcls import get_additions_of_user, get_language_by_filename
 
 
 def main(token: str, user: str = None, cache: str = "commitcache", output: str = "ghcls.json"):
     gh = Github(token)
     user = gh.get_user(user or NotSet)
-    totals = get_additions_of_user(user, token, cache)
+    totals = get_additions_of_user(user, token, cache, get_language_by_filename)
     pathlib.Path(output).write_text(json.dumps(totals, indent=2))
 
 
