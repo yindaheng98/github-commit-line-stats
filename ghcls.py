@@ -11,21 +11,37 @@ from github.Commit import Commit
 from github.GithubObject import NotSet
 import requests
 import os
-import sys
 import dbm.sqlite3 as dbm
+import logging
+logger = logging.getLogger(__name__)
 
-GH_TOKEN = sys.argv[1]
-gh = Github(GH_TOKEN)
-USER = sys.argv[2] if len(sys.argv) > 2 else NotSet
-user = gh.get_user(USER)
 
-totals = defaultdict(int)
+def get_additions_of_user(user: NamedUser | AuthenticatedUser, gh_token: str, cache: str = "commitcache") -> Dict[str, int]:
+    totals = defaultdict(int)
+    for repo in user.get_repos(type="public"):
+        for lang, addition in get_additions_in_repo(repo, user, gh_token, cache).items():
+            totals[lang] += addition
+    return totals
+
+
+def get_additions_in_repo(repo: Repository, user: NamedUser | AuthenticatedUser, gh_token: str, cache: str = "commitcache"):
+    totals = defaultdict(int)
+    commit_set = set()
+    for branch in repo.get_branches():
+        for commit in repo.get_commits(author=user.login, sha=branch.name):
+            if commit.sha in commit_set:
+                continue  # Skip if commit already processed
+            commit_set.add(commit.sha)
+            for lang, addition in get_additions_in_commit(commit, repo, gh_token, cache).items():
+                totals[lang] += addition
+    return totals
 
 
 def get_additions_in_commit(commit: Commit, repo: Repository, gh_token: str, cache: str = "commitcache") -> Dict[str, int]:
     cache_key = f"{repo.full_name}-{commit.sha}"
     with dbm.open(cache, 'c') as db:
         if cache_key in db:
+            logger.info(f"Use cached {commit.sha} at {commit.commit.author.date} in {repo.name}")
             return json.loads(db[cache_key])
         else:
             additions = get_additions_in_commit_from_request(commit, repo, gh_token)
@@ -39,31 +55,24 @@ def get_additions_in_commit_from_request(commit: Commit, repo: Repository, gh_to
         return totals  # Skip if there are no parents (first commit)
     parent = commit.parents[0].sha
     url = f"https://api.github.com/repos/{repo.full_name}/compare/{parent}...{commit.sha}"
+    logger.info(f"Requesting {commit.sha} at {commit.commit.author.date} in {repo.name}")
     patch = requests.get(url, headers={"Authorization": f"token {gh_token}"}).json()
     for file in patch.get("files", []):
-        lang = os.path.splitext(file["filename"])[1]  # Get file extension
+        splitted = os.path.splitext(file["filename"])
+        if not splitted[1]:
+            lang = splitted[0]
+        else:
+            lang = splitted[1]  # Get file extension
         totals[lang] += file["additions"]
     return totals
 
 
-def get_additions_in_repo(repo: Repository, user: NamedUser | AuthenticatedUser, gh_token: str, cache: str = "commitcache"):
-    totals = defaultdict(int)
-    commit_set = set()
-    for branch in repo.get_branches():
-        for commit in repo.get_commits(author=user.login, sha=branch.name):
-            if commit.sha in commit_set:
-                continue  # Skip if commit already processed
-            commit_set.add(commit.sha)
-            print(f"Processing {commit.sha} at {commit.commit.author.date} in {repo.name}@{branch.name}")
-            for lang, addition in get_additions_in_commit(commit, repo, gh_token, cache).items():
-                totals[lang] += addition
-    return totals
-
-
-for repo in user.get_repos(type="public"):
-    for lang, addition in get_additions_in_repo(repo, user, GH_TOKEN, "commitcache").items():
-        totals[lang] += addition
-
-
-# write JSON
-pathlib.Path("ghcls.json").write_text(json.dumps(totals, indent=2))
+if __name__ == "__main__":
+    import sys
+    logging.basicConfig(level=logging.INFO)
+    GH_TOKEN = sys.argv[1]
+    gh = Github(GH_TOKEN)
+    USER = sys.argv[2] if len(sys.argv) > 2 else NotSet
+    user = gh.get_user(USER)
+    totals = get_additions_of_user(user, GH_TOKEN, "commitcache")
+    pathlib.Path("ghcls.json").write_text(json.dumps(totals, indent=2))
