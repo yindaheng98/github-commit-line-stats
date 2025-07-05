@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "github-commit-line-stats"
-version = "1.1.0"
+version = "1.2.0"
 description = "Count how many lines of code you commit on GitHub! (Count by file extension)"
 readme = "README.md"
 authors = [{ name = "yindaheng98", email = "yindaheng98@gmail.com" }]
@@ -12,6 +12,9 @@ dependencies = ["PyGithub"]
 classifiers = ["Programming Language :: Python :: 3"]
 urls = { Homepage = "https://github.com/yindaheng98/github-commit-line-stats" }
 requires-python = ">=3.13"
+
+[project.optional-dependencies]
+linguist = ["requests", "pyyaml"]
 
 # --- Setuptools-specific tables ---------------------------------------------
 
