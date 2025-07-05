@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "github-commit-line-stats"
-version = "1.2.1"
+version = "1.2.2"
 description = "Count how many lines of code you commit on GitHub! (Count by file extension)"
 readme = "README.md"
 authors = [{ name = "yindaheng98", email = "yindaheng98@gmail.com" }]
