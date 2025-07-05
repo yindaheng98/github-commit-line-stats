@@ -7,19 +7,27 @@ python -m ghcls --token <YOUR GITHUB TOKEN>
 ```
 
 ```sh
-python -m ghcls -h
-usage: __main__.py [-h] -t TOKEN [-u USER] [-c CACHE] [-o OUTPUT]
+usage: __main__.py [-h] -t TOKEN [-u USER] [-c CACHE] [-o OUTPUT] [-l LANGUAGE]
 
 GitHub Commit Line Stats
 
 options:
-  -h, --help           show this help message and exit
-  -t, --token TOKEN    GitHub Personal Access Token
-  -u, --user USER      GitHub Username (Optional)
-  -c, --cache CACHE    Cache directory for commits
-  -o, --output OUTPUT  Output file for commit stats
-
+  -h, --help            show this help message and exit
+  -t, --token TOKEN     GitHub Personal Access Token
+  -u, --user USER       GitHub Username (Optional)
+  -c, --cache CACHE     Cache directory for commits
+  -o, --output OUTPUT   Output file for commit stats
+  -l, --language LANGUAGE
+                        Language detection function (default: importlib.import_module('ghcls').get_language_by_filename)
 ```
+
+You can customize your language detector by changing `get_language_by_filename`, e.g.:
+
+```sh
+pip install ghcls[linguist]
+python -m ghcls --token <YOUR GITHUB TOKEN> -l importlib.import_module('ghcls.extensions.linguist').get_language_by_filename
+```
+
 
 ```python
 from ghcls import get_additions_of_user, get_language_by_filename
